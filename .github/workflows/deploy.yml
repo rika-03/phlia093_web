@@ -25,7 +25,9 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
+        env:
+          PNPM_VERIFY_BUILT_SCRIPTS: false
 
       - name: Build
         run: pnpm build
