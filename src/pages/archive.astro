@@ -1,0 +1,111 @@
+---
+import ArchivePanel from "@components/features/archive/ArchivePanel.svelte";
+import CategoryBar from "@components/features/posts/CategoryBar.astro";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { getSortedPostsList } from "@utils/content-utils";
+
+import { siteConfig } from "../config";
+import { getDbFromLocals } from "../lib/cloudflare";
+import { getSortedPosts, getTagList, getCategoryListWithCount } from "../lib/data/db-content-utils";
+
+const showCategoryBar = siteConfig.postListLayout.categoryBar?.enable ?? false;
+
+// 尝试从数据库获取数据，如果失败则使用 Content Collections
+let posts: any[] = [];
+let tags: string[] = [];
+let categories: string[] = [];
+
+try {
+	const db = getDbFromLocals(Astro.locals);
+	const dbPosts = await getSortedPosts(db);
+
+	if (dbPosts.length > 0) {
+		// 转换格式
+		posts = dbPosts.map((post: any) => ({
+			id: post.id || post.slug,
+			url: `/posts/${post.slug}/`,
+			data: {
+				title: post.data.title,
+				tags: post.data.tags,
+				category: post.data.category === null ? undefined : post.data.category,
+				published: post.data.published,
+				alias: post.data.alias,
+				permalink: post.data.permalink,
+			},
+		}));
+
+		// 获取标签和分类
+		const tagList = await getTagList(db);
+		tags = tagList.map((t: any) => t.name);
+
+		const categoryList = await getCategoryListWithCount(db);
+		categories = categoryList.map((c: any) => c.name);
+	} else {
+		// 数据库为空，使用静态数据
+		const sortedPostsList = await getSortedPostsList();
+		posts = sortedPostsList.map((post) => ({
+			id: post.id,
+			url: post.url,
+			data: {
+				title: post.data.title,
+				tags: post.data.tags,
+				category: post.data.category === null ? undefined : post.data.category,
+				published: post.data.published,
+				alias: post.data.alias,
+				permalink: post.data.permalink,
+			},
+		}));
+
+		tags = [...new Set(posts.flatMap((post) => post.data.tags))];
+		categories = [
+			...new Set(
+				posts
+					.map((post) => post.data.category)
+					.filter((c): c is string => typeof c === "string"),
+			),
+		];
+	}
+} catch (e) {
+	console.warn("Failed to load archive from database, using content collections:", e);
+	const sortedPostsList = await getSortedPostsList();
+	posts = sortedPostsList.map((post) => ({
+		id: post.id,
+		url: post.url,
+		data: {
+			title: post.data.title,
+			tags: post.data.tags,
+			category: post.data.category === null ? undefined : post.data.category,
+			published: post.data.published,
+			alias: post.data.alias,
+			permalink: post.data.permalink,
+		},
+	}));
+
+	tags = [...new Set(posts.flatMap((post) => post.data.tags))];
+	categories = [
+		...new Set(
+			posts
+				.map((post) => post.data.category)
+				.filter((c): c is string => typeof c === "string"),
+		),
+	];
+}
+---
+
+<MainGridLayout title={i18n(I18nKey.archive)}>
+	{showCategoryBar && <CategoryBar />}
+	<!-- 引入右侧边栏布局管理器 -->
+	<script>
+		import("../scripts/right-sidebar-layout.js");
+	</script>
+
+	<!-- 修复：补全缺失的 tags 和 categories 属性 -->
+	<ArchivePanel
+		sortedPosts={posts}
+		tags={tags}
+		categories={categories}
+		client:only="svelte"
+	/>
+</MainGridLayout>

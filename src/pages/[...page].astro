@@ -1,0 +1,67 @@
+---
+import Pagination from "@components/control/Pagination.astro";
+import CategoryBar from "@components/features/posts/CategoryBar.astro";
+import PostPage from "@components/features/posts/PostPage.astro";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+
+import { siteConfig } from "../config";
+import { PAGE_SIZE } from "../constants/constants";
+import { getSortedPosts as getSortedPostsFromContent } from "../utils/content-utils";
+import { initPostIdMap } from "../utils/permalink-utils";
+import { getDbFromLocals } from "../lib/cloudflare";
+import { getSortedPosts } from "../lib/data/db-content-utils";
+import { paginate } from "../lib/utils/pagination";
+
+const showCategoryBar = siteConfig.postListLayout.categoryBar?.enable ?? false;
+
+// 获取当前页码
+const pageParam = Astro.params.page?.[0];
+let currentPage = 1;
+if (pageParam) {
+  const match = pageParam.match(/page\/(\d+)/);
+  if (match) {
+    currentPage = parseInt(match[1], 10);
+  }
+}
+
+// 尝试从数据库获取文章，如果失败则使用 Content Collections
+let allBlogPosts: any[] = [];
+let useDatabase = false;
+
+try {
+  const db = getDbFromLocals(Astro.locals);
+  const dbPosts = await getSortedPosts(db);
+  
+  if (dbPosts.length > 0) {
+    allBlogPosts = dbPosts;
+    useDatabase = true;
+  } else {
+    // 数据库为空，使用静态数据
+    allBlogPosts = await getSortedPostsFromContent();
+    initPostIdMap(allBlogPosts);
+  }
+} catch (e) {
+  console.warn("Failed to load posts from database, using content collections:", e);
+  allBlogPosts = await getSortedPostsFromContent();
+  initPostIdMap(allBlogPosts);
+}
+
+// 分页
+const page = paginate(allBlogPosts, {
+  pageSize: PAGE_SIZE,
+  currentPage,
+  baseUrl: "",
+});
+
+const len = page.data.length;
+---
+
+<MainGridLayout>
+	{showCategoryBar && <CategoryBar />}
+	<PostPage page={page} />
+	<Pagination
+		class="mx-auto onload-animation"
+		page={page}
+		style={`animation-delay: calc(var(--content-delay) + ${len * 50}ms)`}
+	/>
+</MainGridLayout>
