@@ -1,1 +1,0 @@
-ALTER TABLE `posts` ADD `public_content_json` text;

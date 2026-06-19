@@ -1,34 +1,29 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "jsx": "react-jsx",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "baseUrl": ".",
-    "module": "ESNext",
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@theme": ["./src/features/theme/themes/default"],
-      "@theme/*": ["./src/features/theme/themes/default/*"]
-    },
-    "types": ["vite/client", "@cloudflare/vitest-pool-workers/types"],
-    "allowImportingTsExtensions": true,
-    "strict": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noEmit": true,
-    "verbatimModuleSyntax": false,
-    "allowJs": true,
-    /* Linting */
-    "skipLibCheck": true,
-    "noUncheckedSideEffectImports": true
-  },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "./worker-configuration.d.ts",
-    ".release-it.ts"
-  ]
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
+		"jsxImportSource": "react",
+		"strictNullChecks": true,
+		"allowJs": false,
+		"declaration": true,
+		"skipLibCheck": true,
+		"plugins": [
+			{
+				"name": "@astrojs/ts-plugin"
+			}
+		],
+		"paths": {
+			"@components/*": ["./src/components/*"],
+			"@assets/*": ["./src/assets/*"],
+			"@constants/*": ["./src/constants/*"],
+			"@utils/*": ["./src/utils/*"],
+			"@i18n/*": ["./src/i18n/*"],
+			"@layouts/*": ["./src/layouts/*"],
+			"@/*": ["./src/*"],
+			"src/*": ["./src/*"]
+		}
+	},
+	"include": ["src/**/*"]
 }
